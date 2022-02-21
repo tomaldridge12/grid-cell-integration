@@ -14,8 +14,14 @@
 % --- INITIALSE VARS ---
 
 N = 32;
-t_end=1000;
+t_end=500;
 s0=rand(N^2,1)./4; % initialise s near 0 - starting with hexagonal grid would improve the convergence rate
+
+% Use initial hexagon data if N = 32 to get better convergence
+if (N == 32)
+    load('Hexagons32.mat', 'u');
+    s0 = u;
+end
 
 a = 1;
 lam = 6;
@@ -37,8 +43,8 @@ alpha = 0.10315;
 x_pref = repmat([-1, 1; 0, 0], N/2); % x component of directional preference, tiled to form a grid
 y_pref = repmat([0, 0; -1, 1], N/2); % y component of directional preference, tiled to for, a grid
 % Reshape matrix of preferences to vector
-x_prefCol = reshape(x_pref,size(s0));
-y_prefCol = reshape(y_pref,size(s0));
+x_prefCol = reshape(x_pref,N^2,1);
+y_prefCol = reshape(y_pref,N^2,1);
 % Combine preference vectors to e matrix
 e = [x_prefCol, y_prefCol];
 
@@ -82,7 +88,7 @@ for i = 1:length(t_v)-1
     v_x(i) = (pos_x(i+1)-pos_x(i))/(t_v(i+1)-t_v(i)) ;
     v_y(i) = (pos_y(i+1)-pos_y(i))/(t_v(i+1)-t_v(i)) ;
 end
-v = [v_x, v_y]';
+v = 2*[v_x, v_y]';
 
 % Solve ODE 
 [t,s] = ode23(@RHS,0:t_end,s0,[],W,tau,alpha,e,v);
@@ -102,7 +108,7 @@ function RHS = RHS(t,s,W,tau,alpha,e,v)
     % A = ones(size(s,2),1);
     
     % ODE uses adaptive time stepping. We normalise these time steps so we
-    % can use our velocity vectors are specific time steps. Since t is
+    % can use our velocity vectors at specific time steps. Since t is
     % continuous on [0, t_end] we take the floor and +1 to avoid using zero
     % as an index. As we plus 1, this can take us outside the range of the
     % vector. We check this edge case and reassign if neccessary. 
@@ -140,7 +146,7 @@ function [x_p, y_p] = getPos(x,N)
         end
 end
 
-% Difference of Gaussians function - can rewrite in the normal 
+% Difference of Gaussians function - not currently used.
 function DoG = DoG(x,mu_1,mu_2,sig_1,sig_2,amp_1,amp_2)
     gaus = @(x,mu,sig,amp) amp*exp(-(((x-mu).^2)/(2*sig.^2)));
     DoG = gaus(x, mu_1, sig_1, amp_1) - gaus(x, mu_2, sig_2, amp_2);
